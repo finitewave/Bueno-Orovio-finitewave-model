@@ -10,10 +10,10 @@ and one additional slow variable (s), representing calcium-related dynamics.
 This model implementation can be used separately from the Finitewave, allowing for standalone simulations and testing of the model dynamics without the need for the entire framework.
 
 ### Reference
-Luo, C. H., & Rudy, Y. (1991). A model of the ventricular cardiac action potential.
-Depolarization, repolarization, and their interaction. Circulation Research, 68(6), 1501-1526.
+Bueno-Orovio, A., Cherry, E. M., & Fenton, F. H. (2008). 
+Minimal model for human ventricular action potentials in tissue. J Theor Biol., 253(3), 544-60.
 
-DOI: https://doi.org/10.1161/01.res.68.6.1501
+DOI: https://doi.org/10.1016/j.jtbi.2008.03.029
 
 ### How to use (quickstart)
 ```bash
