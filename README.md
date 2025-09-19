@@ -1,37 +1,23 @@
-## Finitewave model template (replace with the model name)
+## Bueno-Orovio finitewave model
+Two-dimensional implementation of the Bueno-Orovio–Cherry–Fenton (BOCF) model for simulating human ventricular tissue electrophysiology.
 
-Add model description here and fill the sections below.
+The BOCF model is a minimal phenomenological model developed to capture 
+key ionic mechanisms and reproduce realistic human ventricular action potential 
+dynamics, including restitution, conduction block, and spiral wave behavior. 
+It consists of four variables: transmembrane potential (u), two gating variables (v, w), 
+and one additional slow variable (s), representing calcium-related dynamics.
 
 This model implementation can be used separately from the Finitewave, allowing for standalone simulations and testing of the model dynamics without the need for the entire framework.
 
-### Developer TODO Checklist (template repository only)
-- [ ] **Change model entry point in `pyproject.toml`**  
-  Update the entry point in the `pyproject.toml` file to reflect the new model's identifier. This ensures that the model can be correctly referenced and utilized within the project.
-  
-  In pyproject.toml, replace "model_template" with the actual model id. It must match the name of the directory where ops.py is located.
-  ```toml
-  [project.entry-points."finitewave.models"] 
-  model_template = "finitewave_models.model_template"
-  ```
-
-- [ ] **Implement `ops.py` model equations**  
-  Implement the model equations in the `ops.py` module. This module is the single source of truth for the model equations. Provide pure Python functions with scalar inputs/outputs (no NumPy arrays, no classes, no globals). Do NOT add numba/jax/torch here — the Finitewave runtime will wrap these functions for you. Stimulus and time integration are handled outside of the model. Here you only return time derivatives.
-
-- [ ] **Create 0D implementation for tests and examples**  
-  Design a zero-dimensional (0D) implementation of the model that can be used for testing and demonstration purposes. This should simplify the model to its core functionality, making it easier to validate and showcase.
-
-- [ ] **Provide at least one workable example for the model**  
-  Create a practical example that demonstrates how to use the model: model initialization, model stimulation and visualization of the model's AP.
-
-- [ ] **Implement model tests**  
-  Write unit tests to verify the correctness of the model's implementation: check model attributes and estimate AP parameters (min/max amplitude, duration) - this ensures that the model is excitable and generates the expected AP. 
-
 ### Reference
-Paper, Authors, DOI.
+Luo, C. H., & Rudy, Y. (1991). A model of the ventricular cardiac action potential.
+Depolarization, repolarization, and their interaction. Circulation Research, 68(6), 1501-1526.
+
+DOI: https://doi.org/10.1161/01.res.68.6.1501
 
 ### How to use (quickstart)
 ```bash
-python -m examples.model_example
+python -m examples.bueno_orovio_example
 ```
 
 ### How to test
@@ -42,27 +28,56 @@ python -m pytest -q
 ### Repository structure
 ```text
 .
-├── model_template/                  # equations package (ops.py)
+├── bueno_orovio/                  # equations package (ops.py)
 │   ├── __init__.py
-│   └── ops.py                       # model equations (pure functions)
-├── implementation/                  # 0D model implementation
+│   └── ops.py                     # model equations (pure functions)
+├── implementation/                # 0D model implementation
 │   ├── __init__.py
-│   └── model_0d.py
+│   └── bueno_orovio_0d.py
 ├── example/
-│   └── model_example.py             # minimal script to run a short trace
+│   └── bueno_orovio_example.py    # minimal script to run a short trace
 ├── tests/
-│   └── test.py                      # smoke test; reproducibility checks
+│   └── test.py                    # smoke test; reproducibility checks
 ├── .gitignore
-├── LICENSE                          # MIT
-├── pyproject.toml                   # configuration file
-└── README.md                        # this file
+├── LICENSE                        # MIT
+├── pyproject.toml                 # configuration file
+└── README.md                      # this file
 ```
 
 ### Variables
-Model state variables: description, units and ranges (optional)
-- `u` — ...
+- `u = 0.0` — Membrane potential
+- `v = 1.0` - Fast gating variable representing sodium channel inactivation.
+- `w = 1.0` - Slow recovery variable representing calcium and potassium gating.
+- `s = 0.0` - Slow variable related to calcium inactivation.
 
 ### Parameters
-Parameters and their defualt values
-- `par` - ...
+- `u_o       = 0.0`    - Resting membrane potential.
+- `u_u       = 1.55`   - Peak potential (upper bound).
+- `theta_v   = 0.3`    - Activation threshold for v.
+- `theta_w   = 0.13`   - Activation threshold for w.
+- `theta_v_m = 0.006`  - Threshold for switching time constants for v.
+- `theta_o   = 0.006`  - Threshold for switching time constants for w.
+- `tau_v1_m  = 60`     - Time constant for v below threshold.
+- `tau_v2_m  = 1150`   - Time constant for v above threshold.
+- `tau_v_p   = 1.4506` - Decay constant for v.
+- `tau_w1_m  = 60`     - Base time constant for w.
+- `tau_w2_m  = 15`    - Transition time constant for w.
+- `k_w_m     = 65`     - Parameter controlling shape of τw curve.
+- `u_w_m     = 0.03`   - Parameter controlling shape of τw curve.
+- `tau_w_p   = 200`    - Decay constant for w above threshold.
+- `tau_fi    = 0.11`   - Time constant for fast inward current (J_fi).
+- `tau_o1    = 400`    - Time constant for outward current below threshold.
+- `tau_o2    = 6`      - Time constant for outward current above threshold.
+- `tau_so1   = 30.0181` - Time constant for repolarizing tail current below threshold.
+- `tau_so2   = 0.9957` - Time constant for repolarizing tail current above threshold.
+- `k_so      = 2.0458` - Parameter controlling nonlinearity in tau_so.
+- `u_so      = 0.65`   - Parameter controlling nonlinearity in tau_so.
+- `tau_s1    = 2.7342` - Time constant for s below threshold.
+- `tau_s2    = 16`     - Time constant for s above threshold.
+- `k_s       = 2.0994` - Parameter for tanh activation of s variable.
+- `u_s       = 0.9087` - Parameter for tanh activation of s variable.
+- `tau_si    = 1.8875` - Time constant for slow inward current (J_si).
+- `tau_w_inf = 0.07`   - Slope of w∞ below threshold.
+- `w_inf_    = 0.94`   - Asymptotic value of w∞ above threshold.
+
 
