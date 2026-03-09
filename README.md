@@ -51,6 +51,7 @@ python -m pytest -q
 - `s = 0.0` - Slow variable related to calcium inactivation.
 
 ### Parameters
+This implementation corresponds to the EPI (epicardial) parameter set described in the paper.
 - `u_o       = 0.0`    - Resting membrane potential.
 - `u_u       = 1.55`   - Peak potential (upper bound).
 - `theta_v   = 0.3`    - Activation threshold for v.
