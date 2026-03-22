@@ -134,7 +134,13 @@ def calc_rhs(J_fi, J_so, J_si) -> float:
     return -J_fi - J_so - J_si
 
 
-def calc_v(v, u, theta_v, v_inf, tau_v_m, tau_v_p):
+def calc_where(cond, x, y):
+    if cond:
+        return x
+    return y
+
+
+def calc_v(v, u, theta_v, v_inf, tau_v_m, tau_v_p, where=calc_where):
     """
     Calculates the fast inactivation gate variable `v`.
 
@@ -162,10 +168,10 @@ def calc_v(v, u, theta_v, v_inf, tau_v_m, tau_v_p):
     float
         Updated value of the v gate.
     """
-    return (v_inf - v)/tau_v_m if (u - theta_v) < 0 else -v/tau_v_p
+    return where((u - theta_v) < 0, (v_inf - v)/tau_v_m, -v/tau_v_p)
 
 
-def calc_w(w, u, theta_w, w_inf, tau_w_m, tau_w_p):
+def calc_w(w, u, theta_w, w_inf, tau_w_m, tau_w_p, where=calc_where):
     """
     Calculates the slow gating variable `w`.
 
@@ -192,7 +198,7 @@ def calc_w(w, u, theta_w, w_inf, tau_w_m, tau_w_p):
     float
         Updated value of the w gate.
     """
-    return (w_inf - w)/tau_w_m if (u - theta_w) < 0 else -w/tau_w_p
+    return where((u - theta_w) < 0, (w_inf - w)/tau_w_m, -w/tau_w_p)
 
 
 def calc_s(s, u, tau_s, k_s, u_s, tanh=math.tanh):
@@ -224,7 +230,7 @@ def calc_s(s, u, tau_s, k_s, u_s, tanh=math.tanh):
     return ((1 + tanh(k_s*(u - u_s)))/2 - s)/tau_s
 
 
-def calc_Jfi(u, v, theta_v, u_u, tau_fi):
+def calc_Jfi(u, v, theta_v, u_u, tau_fi, where=calc_where):
     """
     Computes the fast inward sodium current (J_fi).
 
@@ -249,11 +255,11 @@ def calc_Jfi(u, v, theta_v, u_u, tau_fi):
     float
         Current value of J_fi.
     """
-    H = 1.0 if (u - theta_v) >= 0 else 0.0
+    H = where(u - theta_v >= 0, 1.0, 0.0)
     return -v*H*(u - theta_v)*(u_u - u)/tau_fi
 
 
-def calc_Jso(u, u_o, theta_w, tau_o, tau_so):
+def calc_Jso(u, u_o, theta_w, tau_o, tau_so, where=calc_where):
     """
     Computes the slow outward current (J_so).
 
@@ -278,11 +284,11 @@ def calc_Jso(u, u_o, theta_w, tau_o, tau_so):
     float
         Current value of J_so.
     """
-    H = 1.0 if (u - theta_w) >= 0 else 0.0
+    H = where((u - theta_w) >= 0, 1.0, 0.0)
     return (u - u_o)*(1 - H)/tau_o + H/tau_so
 
 
-def calc_Jsi(u, w, s, theta_w, tau_si):
+def calc_Jsi(u, w, s, theta_w, tau_si, where=calc_where):
     """
     Computes the slow inward current (J_si), active during plateau phase.
 
@@ -306,11 +312,11 @@ def calc_Jsi(u, w, s, theta_w, tau_si):
     float
         Current value of J_si.
     """
-    H = 1.0 if (u - theta_w) >= 0 else 0.0
+    H = where((u - theta_w) >= 0, 1.0, 0.0)
     return -H*w*s/tau_si
 
 
-def calc_tau_v_m(u, theta_v_m, tau_v1_m, tau_v2_m):
+def calc_tau_v_m(u, theta_v_m, tau_v1_m, tau_v2_m, where=calc_where):
     """
     Selects time constant for v gate depending on membrane potential.
 
@@ -321,7 +327,8 @@ def calc_tau_v_m(u, theta_v_m, tau_v1_m, tau_v2_m):
     float
         Time constant for v gate.
     """
-    return tau_v1_m if (u - theta_v_m) < 0 else tau_v2_m
+    return where((u - theta_v_m) < 0, tau_v1_m, tau_v2_m)
+
 
 
 def calc_tau_w_m(u, tau_w1_m, tau_w2_m, k_w_m, u_w_m, tanh=math.tanh):
@@ -378,7 +385,7 @@ def calc_tau_so(u, tau_so1, tau_so2, k_so, u_so, tanh=math.tanh):
     return tau_so1 + (tau_so2 - tau_so1)*(1 + tanh(k_so*(u - u_so)))/2
 
 
-def calc_tau_s(u, tau_s1, tau_s2, theta_w):
+def calc_tau_s(u, tau_s1, tau_s2, theta_w, where=calc_where):
     """
     Selects tau_s based on threshold.
 
@@ -398,10 +405,10 @@ def calc_tau_s(u, tau_s1, tau_s2, theta_w):
     float
         Selected time constant tau_s.
     """
-    return tau_s1 if (u - theta_w) < 0 else tau_s2
+    return where((u - theta_w) < 0, tau_s1, tau_s2)
 
 
-def calc_tau_o(u, tau_o1, tau_o2, theta_o):
+def calc_tau_o(u, tau_o1, tau_o2, theta_o, where=calc_where):
     """
     Selects tau_o based on threshold.
 
@@ -421,10 +428,10 @@ def calc_tau_o(u, tau_o1, tau_o2, theta_o):
     float
         Selected time constant tau_o.
     """
-    return tau_o1 if (u - theta_o) < 0 else tau_o2
+    return where((u - theta_o) < 0, tau_o1, tau_o2)
     
 
-def calc_v_inf(u, theta_v_m):
+def calc_v_inf(u, theta_v_m, where=calc_where):
     """
     Computes the value of v based on membrane potential.
 
@@ -440,10 +447,10 @@ def calc_v_inf(u, theta_v_m):
     float
         Steady-state value of v.
     """
-    return 1.0 if u < theta_v_m else 0.0
+    return where(u < theta_v_m, 1.0, 0.0)
 
 
-def calc_w_inf(u, theta_o, tau_w_inf, w_inf_):
+def calc_w_inf(u, theta_o, tau_w_inf, w_inf_, where=calc_where):
     """
     Computes the value of w based on membrane potential.
 
@@ -463,4 +470,4 @@ def calc_w_inf(u, theta_o, tau_w_inf, w_inf_):
     float
         Steady-state value of w.
     """
-    return 1 - u/tau_w_inf if (u - theta_o) < 0 else w_inf_
+    return where((u - theta_o) < 0, 1 - u/tau_w_inf, w_inf_)
