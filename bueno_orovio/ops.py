@@ -24,6 +24,7 @@ __all__ = (
     "get_variables",
     "get_parameters",
     "calc_rhs",  
+    "calc_where",
     "calc_v",
     "calc_w",
     "calc_s",
@@ -39,7 +40,7 @@ __all__ = (
     "calc_w_inf"
 )
 
-import math
+from math import tanh
 
 
 def get_variables() -> dict[str, float]:
@@ -139,8 +140,7 @@ def calc_where(cond, x, y):
         return x
     return y
 
-
-def calc_v(v, u, theta_v, v_inf, tau_v_m, tau_v_p, where=calc_where):
+def calc_v(v, u, theta_v, v_inf, tau_v_m, tau_v_p):
     """
     Calculates the fast inactivation gate variable `v`.
 
@@ -168,10 +168,10 @@ def calc_v(v, u, theta_v, v_inf, tau_v_m, tau_v_p, where=calc_where):
     float
         Updated value of the v gate.
     """
-    return where((u - theta_v) < 0, (v_inf - v)/tau_v_m, -v/tau_v_p)
+    return calc_where((u - theta_v) < 0, (v_inf - v)/tau_v_m, -v/tau_v_p)
 
 
-def calc_w(w, u, theta_w, w_inf, tau_w_m, tau_w_p, where=calc_where):
+def calc_w(w, u, theta_w, w_inf, tau_w_m, tau_w_p):
     """
     Calculates the slow gating variable `w`.
 
@@ -198,10 +198,10 @@ def calc_w(w, u, theta_w, w_inf, tau_w_m, tau_w_p, where=calc_where):
     float
         Updated value of the w gate.
     """
-    return where((u - theta_w) < 0, (w_inf - w)/tau_w_m, -w/tau_w_p)
+    return calc_where((u - theta_w) < 0, (w_inf - w)/tau_w_m, -w/tau_w_p)
 
 
-def calc_s(s, u, tau_s, k_s, u_s, tanh=math.tanh):
+def calc_s(s, u, tau_s, k_s, u_s):
     """
     Calculates the slow variable `s`, related to calcium dynamics.
 
@@ -219,8 +219,6 @@ def calc_s(s, u, tau_s, k_s, u_s, tanh=math.tanh):
         Slope of the tanh function.
     u_s : float
         Midpoint of the tanh function.
-    tanh : function, optional
-        Hyperbolic tangent function (default is math.tanh).
 
     Returns
     -------
@@ -230,7 +228,7 @@ def calc_s(s, u, tau_s, k_s, u_s, tanh=math.tanh):
     return ((1 + tanh(k_s*(u - u_s)))/2 - s)/tau_s
 
 
-def calc_Jfi(u, v, theta_v, u_u, tau_fi, where=calc_where):
+def calc_Jfi(u, v, theta_v, u_u, tau_fi):
     """
     Computes the fast inward sodium current (J_fi).
 
@@ -255,11 +253,11 @@ def calc_Jfi(u, v, theta_v, u_u, tau_fi, where=calc_where):
     float
         Current value of J_fi.
     """
-    H = where(u - theta_v >= 0, 1.0, 0.0)
+    H = calc_where(u - theta_v >= 0, 1.0, 0.0)
     return -v*H*(u - theta_v)*(u_u - u)/tau_fi
 
 
-def calc_Jso(u, u_o, theta_w, tau_o, tau_so, where=calc_where):
+def calc_Jso(u, u_o, theta_w, tau_o, tau_so):
     """
     Computes the slow outward current (J_so).
 
@@ -284,11 +282,11 @@ def calc_Jso(u, u_o, theta_w, tau_o, tau_so, where=calc_where):
     float
         Current value of J_so.
     """
-    H = where((u - theta_w) >= 0, 1.0, 0.0)
+    H = calc_where((u - theta_w) >= 0, 1.0, 0.0)
     return (u - u_o)*(1 - H)/tau_o + H/tau_so
 
 
-def calc_Jsi(u, w, s, theta_w, tau_si, where=calc_where):
+def calc_Jsi(u, w, s, theta_w, tau_si):
     """
     Computes the slow inward current (J_si), active during plateau phase.
 
@@ -312,26 +310,35 @@ def calc_Jsi(u, w, s, theta_w, tau_si, where=calc_where):
     float
         Current value of J_si.
     """
-    H = where((u - theta_w) >= 0, 1.0, 0.0)
+    H = calc_where((u - theta_w) >= 0, 1.0, 0.0)
     return -H*w*s/tau_si
 
 
-def calc_tau_v_m(u, theta_v_m, tau_v1_m, tau_v2_m, where=calc_where):
+def calc_tau_v_m(u, theta_v_m, tau_v1_m, tau_v2_m):
     """
     Selects time constant for v gate depending on membrane potential.
 
-    Returns `tau_v1_m` below `theta_v_m`, and `tau_v2_m` above.
-
+    Parameters
+    ----------
+    u : float
+        Membrane potential.
+    theta_v_m : float
+        Threshold for switching time constants.
+    tau_v1_m : float
+        Time constant for v below threshold.
+    tau_v2_m : float
+        Time constant for v above threshold.
+    
     Returns
     -------
     float
         Time constant for v gate.
     """
-    return where((u - theta_v_m) < 0, tau_v1_m, tau_v2_m)
+    return calc_where((u - theta_v_m) < 0, tau_v1_m, tau_v2_m)
 
 
 
-def calc_tau_w_m(u, tau_w1_m, tau_w2_m, k_w_m, u_w_m, tanh=math.tanh):
+def calc_tau_w_m(u, tau_w1_m, tau_w2_m, k_w_m, u_w_m):
     """
     Computes smooth transition time constant for w gate using tanh.
 
@@ -347,8 +354,6 @@ def calc_tau_w_m(u, tau_w1_m, tau_w2_m, k_w_m, u_w_m, tanh=math.tanh):
         Slope of the transition.
     u_w_m : float
         Midpoint of the transition.
-    tanh : function, optional
-        Hyperbolic tangent function (default is math.tanh).
 
     Returns
     -------
@@ -358,7 +363,7 @@ def calc_tau_w_m(u, tau_w1_m, tau_w2_m, k_w_m, u_w_m, tanh=math.tanh):
     return tau_w1_m + (tau_w2_m - tau_w1_m)*(1 + tanh(k_w_m*(u - u_w_m)))/2
 
 
-def calc_tau_so(u, tau_so1, tau_so2, k_so, u_so, tanh=math.tanh):
+def calc_tau_so(u, tau_so1, tau_so2, k_so, u_so):
     """
     Computes tau_so using a sigmoidal transition between two values.
 
@@ -374,8 +379,6 @@ def calc_tau_so(u, tau_so1, tau_so2, k_so, u_so, tanh=math.tanh):
         Slope of the transition.
     u_so : float
         Midpoint of the transition.
-    tanh : function, optional
-        Hyperbolic tangent function (default is math.tanh).
 
     Returns
     -------
@@ -385,7 +388,7 @@ def calc_tau_so(u, tau_so1, tau_so2, k_so, u_so, tanh=math.tanh):
     return tau_so1 + (tau_so2 - tau_so1)*(1 + tanh(k_so*(u - u_so)))/2
 
 
-def calc_tau_s(u, tau_s1, tau_s2, theta_w, where=calc_where):
+def calc_tau_s(u, tau_s1, tau_s2, theta_w):
     """
     Selects tau_s based on threshold.
 
@@ -405,10 +408,10 @@ def calc_tau_s(u, tau_s1, tau_s2, theta_w, where=calc_where):
     float
         Selected time constant tau_s.
     """
-    return where((u - theta_w) < 0, tau_s1, tau_s2)
+    return calc_where((u - theta_w) < 0, tau_s1, tau_s2)
 
 
-def calc_tau_o(u, tau_o1, tau_o2, theta_o, where=calc_where):
+def calc_tau_o(u, tau_o1, tau_o2, theta_o):
     """
     Selects tau_o based on threshold.
 
@@ -428,10 +431,10 @@ def calc_tau_o(u, tau_o1, tau_o2, theta_o, where=calc_where):
     float
         Selected time constant tau_o.
     """
-    return where((u - theta_o) < 0, tau_o1, tau_o2)
+    return calc_where((u - theta_o) < 0, tau_o1, tau_o2)
     
 
-def calc_v_inf(u, theta_v_m, where=calc_where):
+def calc_v_inf(u, theta_v_m):
     """
     Computes the value of v based on membrane potential.
 
@@ -447,10 +450,10 @@ def calc_v_inf(u, theta_v_m, where=calc_where):
     float
         Steady-state value of v.
     """
-    return where(u < theta_v_m, 1.0, 0.0)
+    return calc_where(u < theta_v_m, 1.0, 0.0)
 
 
-def calc_w_inf(u, theta_o, tau_w_inf, w_inf_, where=calc_where):
+def calc_w_inf(u, theta_o, tau_w_inf, w_inf_):
     """
     Computes the value of w based on membrane potential.
 
@@ -470,4 +473,4 @@ def calc_w_inf(u, theta_o, tau_w_inf, w_inf_, where=calc_where):
     float
         Steady-state value of w.
     """
-    return where((u - theta_o) < 0, 1 - u/tau_w_inf, w_inf_)
+    return calc_where((u - theta_o) < 0, 1 - u/tau_w_inf, w_inf_)
