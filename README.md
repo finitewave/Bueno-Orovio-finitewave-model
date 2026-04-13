@@ -15,6 +15,13 @@ Minimal model for human ventricular action potentials in tissue. J Theor Biol., 
 
 DOI: https://doi.org/10.1016/j.jtbi.2008.03.029
 
+#### Modification of the model for atrial tissue:
+Lenk, C., Weber, F. M., Bauer, M., Einax, M., Maass, P., & Seeman, G. (2015).
+Initiation of atrial fibrillation by interaction of pacemakers with geometrical constraints.
+Journal of Theoretical Biology, 366, 13-23.
+
+DOI: https://doi.org/10.1016/j.jtbi.2014.10.030
+
 ### How to use (quickstart)
 ```bash
 python -m examples.bueno_orovio_example

@@ -17,10 +17,11 @@ t_max = 300.0
 model = BuenoOrovio0D(dt=0.01, stimulations=stimulations)
 model.run(t_max=t_max)
 
-time = np.arange(0, t_max, model.dt)
-plt.plot(time, model.history['u'])
+V = np.array(model.history['u']) * 85.7 - 84.0 # Convert to mV using model scaling
+
+plt.plot(model.times, V)
 plt.xlabel('Time (s)')
-plt.ylabel('Membrane Potential (u)')
+plt.ylabel('Membrane Potential (mV)')
 plt.title('0D Model Simulation')
 plt.grid()
 plt.show()
