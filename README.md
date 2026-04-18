@@ -27,6 +27,8 @@ DOI: https://doi.org/10.1016/j.jtbi.2014.10.030
 python -m examples.bueno_orovio_example
 ```
 
+![Alt text](bueno_orovio_ap.png)
+
 ### How to test
 ```bash
 python -m pytest -q
