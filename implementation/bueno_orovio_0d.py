@@ -71,6 +71,8 @@ class BuenoOrovio0D:
         self.variables = ops.get_variables()
         self.parameters = ops.get_parameters()
         self.history = {s: [] for s in self.variables}
+        self.stim_history = []
+        self.times = []
 
     def step(self, i: int):
         """
@@ -86,103 +88,24 @@ class BuenoOrovio0D:
         w_old = self.variables["w"]
         s_old = self.variables["s"]
 
-        v_inf = ops.calc_v_inf(u_old, self.parameters["theta_v_m"])
-        tau_v_m = ops.calc_tau_v_m(
-            u_old,
-            self.parameters["theta_v_m"],
-            self.parameters["tau_v1_m"],
-            self.parameters["tau_v2_m"],
-        )
-        dv = ops.calc_v(
-            v_old,
-            u_old,
-            self.parameters["theta_v"],
-            v_inf,
-            tau_v_m,
-            self.parameters["tau_v_p"],
+        rhs, v_new, w_new, s_new = ops.ionic_step(
+            dt=self.dt,
+            u=u_old,
+            v=v_old,
+            w=w_old,
+            s=s_old,
+            **self.parameters
         )
 
-        w_inf = ops.calc_w_inf(
-            u_old,
-            self.parameters["theta_o"],
-            self.parameters["tau_w_inf"],
-            self.parameters["w_inf_"],
-        )
-        tau_w_m = ops.calc_tau_w_m(
-            u_old,
-            self.parameters["tau_w1_m"],
-            self.parameters["tau_w2_m"],
-            self.parameters["k_w_m"],
-            self.parameters["u_w_m"],
-        )
-        dw = ops.calc_w(
-            w_old,
-            u_old,
-            self.parameters["theta_w"],
-            w_inf,
-            tau_w_m,
-            self.parameters["tau_w_p"],
-        )
+        stim_curr = self.dt * sum(stim.stim(t=self.dt*i) for stim in self.stimulations)
+        self.stim_history.append(stim_curr)
 
-        tau_s = ops.calc_tau_s(
-            u_old,
-            self.parameters["tau_s1"],
-            self.parameters["tau_s2"],
-            self.parameters["theta_w"],
-        )
-        ds = ops.calc_s(
-            s_old,
-            u_old,
-            tau_s,
-            self.parameters["k_s"],
-            self.parameters["u_s"],
-        )
+        u_new = u_old + self.dt * rhs + stim_curr
 
-        J_fi = ops.calc_Jfi(
-            u_old,
-            v_old,
-            self.parameters["theta_v"],
-            self.parameters["u_u"],
-            self.parameters["tau_fi"],
-        )
-
-        tau_o = ops.calc_tau_o(
-            u_old,
-            self.parameters["tau_o1"],
-            self.parameters["tau_o2"],
-            self.parameters["theta_o"],
-        )
-        tau_so = ops.calc_tau_so(
-            u_old,
-            self.parameters["tau_so1"],
-            self.parameters["tau_so2"],
-            self.parameters["k_so"],
-            self.parameters["u_so"],
-        )
-        J_so = ops.calc_Jso(
-            u_old,
-            self.parameters["u_o"],
-            self.parameters["theta_w"],
-            tau_o,
-            tau_so,
-        )
-
-        J_si = ops.calc_Jsi(
-            u_old,
-            w_old,
-            s_old,
-            self.parameters["theta_w"],
-            self.parameters["tau_si"],
-        )
-
-        stim_current = sum(stim.stim(t=self.dt * i) for stim in self.stimulations)
-
-        du = ops.calc_rhs(J_fi, J_so, J_si) + stim_current
-
-        self.variables["u"] = u_old + self.dt * du
-        self.variables["v"] = v_old + self.dt * dv
-        self.variables["w"] = w_old + self.dt * dw
-        self.variables["s"] = s_old + self.dt * ds
+        self.variables["u"] = u_new
+        self.variables["v"] = v_new
+        self.variables["w"] = w_new
+        self.variables["s"] = s_new
 
     def run(self, t_max: float):
         """
@@ -196,5 +119,6 @@ class BuenoOrovio0D:
         n_steps = int(round(t_max/self.dt))
         for i in range(n_steps):
             self.step(i)
+            self.times.append(self.dt * i)
             for s in self.variables:
                 self.history[s].append(self.variables[s])

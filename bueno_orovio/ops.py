@@ -23,6 +23,7 @@ DOI: https://doi.org/10.1016/j.jtbi.2008.03.029
 __all__ = (
     "get_variables",
     "get_parameters",
+    "ionic_step",
     "calc_rhs",  
     "calc_where",
     "calc_v",
@@ -127,6 +128,64 @@ def get_parameters() -> dict[str, float]:
         "w_inf_": 0.94
     }
 
+
+def ionic_step(dt, u, v, w, s, u_o, u_u, theta_v, theta_w, theta_v_m, theta_o,
+               tau_v1_m, tau_v2_m, tau_v_p, tau_w1_m, tau_w2_m, k_w_m, u_w_m,
+               tau_w_p, tau_fi, tau_o1, tau_o2, tau_so1, tau_so2, k_so, u_so,
+               tau_s1, tau_s2, k_s, u_s, tau_si, tau_w_inf, w_inf_):
+    """
+    Computes the derivatives of the state variables based on the model equations.
+
+    Parameters
+    ----------
+    u : float
+        Membrane potential.
+    v : float
+        Fast gating variable.
+    w : float
+        Slow gating variable.
+    s : float
+        Calcium-related variable.
+    params : dict
+        Dictionary of model parameters.
+
+    Returns
+    -------
+    du_dt : float
+        Time derivative of membrane potential.
+    dv_dt : float
+        Time derivative of fast gating variable.
+    dw_dt : float
+        Time derivative of slow gating variable.
+    ds_dt : float
+        Time derivative of calcium-related variable.
+    """
+
+    v_inf = calc_v_inf(u, theta_v_m)
+    tau_v_m = calc_tau_v_m(u, theta_v_m, tau_v1_m, tau_v2_m)
+    dv = calc_v(v, u, theta_v, v_inf, tau_v_m, tau_v_p)
+
+    w_inf = calc_w_inf(u, theta_o, tau_w_inf, w_inf_)
+    tau_w_m = calc_tau_w_m(u, tau_w1_m, tau_w2_m, k_w_m, u_w_m)
+    dw = calc_w(w, u, theta_w, w_inf, tau_w_m, tau_w_p)
+
+    tau_s = calc_tau_s(u, tau_s1, tau_s2, theta_w)
+    ds = calc_s(s, u, tau_s, k_s, u_s)
+
+    J_fi = calc_Jfi(u, v, theta_v, u_u, tau_fi)
+
+    tau_o = calc_tau_o(u, tau_o1, tau_o2, theta_o)
+    tau_so = calc_tau_so(u, tau_so1, tau_so2, k_so, u_so)
+    J_so = calc_Jso(u, u_o, theta_w, tau_o, tau_so)
+
+    J_si = calc_Jsi(u, w, s, theta_w, tau_si)
+
+    rhs = calc_rhs(J_fi, J_so, J_si)
+
+    v_new = v + dt * dv
+    w_new = w + dt * dw
+    s_new = s + dt * ds
+    return rhs, v_new, w_new, s_new
 
 def calc_rhs(J_fi, J_so, J_si) -> float:
     """
