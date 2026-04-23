@@ -21,6 +21,7 @@ DOI: https://doi.org/10.1016/j.jtbi.2008.03.029
 """
 
 __all__ = (
+    "get_diffusion_coefficient",
     "get_variables",
     "get_parameters",
     "ionic_step",
@@ -43,6 +44,15 @@ __all__ = (
 
 from math import tanh
 
+
+def get_diffusion_coefficient() -> float:
+    """
+    Returns the diffusion coefficient for the model.
+
+    The diffusion coefficient (D_model) controls the spatial spread of the electrical signal in tissue.
+    A value of 0.1117 is commonly used for human ventricular tissue to match physiological conduction velocities.
+    """
+    return {"D_model": 0.1117}
 
 def get_variables() -> dict[str, float]:
     """
